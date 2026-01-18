@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  rust-backend:
+    build:
+      context: ..
+      dockerfile: docker/rust-backend.Dockerfile
+    container_name: immutable-encryption-rust
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../keys:/app/keys
+    environment:
+      - RUST_LOG=info
+      - CONFIG_PATH=/app/data/config.toml
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  python-api:
+    build:
+      context: ..
+      dockerfile: docker/python-api.Dockerfile
+    container_name: immutable-encryption-python
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../uploads:/app/uploads
+    environment:
+      - API_BASE_URL=http://rust-backend:8080
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/immutable_encryption
+      - PYTHONPATH=/app
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+    depends_on:
+      - rust-backend
+      - redis
+      - postgres
+
+  streamlit:
+    build:
+      context: ..
+      dockerfile: docker/streamlit.Dockerfile
+    container_name: immutable-encryption-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://python-api:8000
+      - AUTH_TOKEN=demo-token
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+    depends_on:
+      - python-api
+
+  redis:
+    image: redis:7-alpine
+    container_name: immutable-encryption-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: immutable-encryption-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=immutable_encryption
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    container_name: immutable-encryption-ipfs
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - ipfs-data:/data/ipfs
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: immutable-encryption-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ../keys/tls:/etc/nginx/tls
+    networks:
+      - immutable-encryption-net
+    restart: unless-stopped
+    depends_on:
+      - rust-backend
+      - python-api
+      - streamlit
+
+volumes:
+  redis-data:
+  postgres-data:
+  ipfs-data:
+
+networks:
+  immutable-encryption-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
