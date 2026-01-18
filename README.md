@@ -2,6 +2,17 @@
 
 A comprehensive real-time video encryption and verification system with blockchain anchoring for court-admissible evidence.
 
+# Quick start with Docker Compose
+cd scripts
+chmod +x deploy.sh
+./deploy.sh latest docker-compose
+
+# Access services
+# Rust Backend: http://localhost:8080
+# Python API: http://localhost:8000/docs
+# Streamlit UI: http://localhost:8501
+# Grafana: http://localhost:3000
+
 ## Architecture
 
 ```
