@@ -1,0 +1,246 @@
+# Rust
+/target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+python_api/venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+/data/
+/uploads/
+/backups/
+/logs/
+/keys/
+*.key
+*.pem
+*.crt
+*.p12
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# Kubernetes
+*.kubeconfig
+
+# Configuration with secrets
+.env
+.env.local
+.env.production
+config.toml
+config.prod.toml
+secrets/
+.secrets/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache
+.cache/
+cache/
+
+# Test outputs
+test-results/
+coverage/
+.coverage
+htmlcov/
+
+# IPFS
+.ipfs/
+ipfs-repo/
+
+# Monitoring
+prometheus-data/
+grafana-data/
+alertmanager-data/
+
+# Blockchain
+wallet.dat
+keystore/
+*.wallet
+
+# Node modules (if any)
+node_modules/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Video files (test files)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+test_videos/
+sample_videos/
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+large_files/
+
+# Build artifacts
+build/
+dist/
+*.bin
+*.exe
+
+# Security
+ssh-keys/
+*.pem
+*.key
+*.crt
+*.csr
+ssl/
+
+# AI/ML models
+*.pt
+*.pth
+*.onnx
+*.pb
+models/
+__pycache__/
+
+# Streamlit
+.streamlit/
+
+# Terraform (if using)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Database dumps
+*.sql
+*.dump
+
+# Performance profiling
+*.prof
+*.pprof
+
+# Rust-specific
+rust-toolchain
+.cargo/bin/
+.cargo/registry/index/
+.cargo/registry/cache/
+.cargo/git/db/
+
+# Python-specific
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# Local development
+local/
+dev/
+dev-data/
+
+# Documentation build
+docs/_build/
+docs/build/
+site/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Editor backup
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Thumbnails
+._*
+
+# MacOS
+.AppleDouble
+.LSOverride
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Snapshots
+snapshots/
+*.snapshot
+
+# Docker-compose override
+docker-compose.override.yml
+
+# Kubernetes secrets
+secrets/
+*.secret
+*.sensitive
