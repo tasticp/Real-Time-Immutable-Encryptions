@@ -128,7 +128,7 @@ jobs:
         output: 'trivy-results.sarif'
 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: 'trivy-results.sarif'
 
@@ -176,7 +176,7 @@ jobs:
     name: Build Documentation
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -198,6 +198,7 @@ jobs:
         echo "<h1>API Documentation</h1>" >> docs/_build/html/index.html
 
     - name: Deploy to GitHub Pages
+      if: false  # Disabled due to permission issues - enable after configuring repo settings
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}

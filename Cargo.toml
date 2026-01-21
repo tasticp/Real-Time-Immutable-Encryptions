@@ -11,7 +11,7 @@ sha2 = "0.10"
 hmac = "0.12"
 
 # Video processing
-opencv = { version = "0.88", features = ["opencv-4"] }
+opencv = "0.88"
 ffmpeg-next = "6.0"
 image = "0.24"
 
