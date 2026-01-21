@@ -37,7 +37,7 @@ jobs:
      - name: Install system dependencies
        run: |
          sudo apt-get update
-         sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev
+         sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev
 
     - name: Check formatting
       run: cargo fmt --all -- --check
@@ -94,9 +94,9 @@ jobs:
       run: |
         flake8 python_api/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-    - name: Check formatting with black
-      run: |
-        black --check python_api/
+     - name: Check formatting with black
+       run: |
+         black --check .
 
     - name: Run tests with coverage
       run: |
@@ -114,7 +114,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-22.04
-    
+    permissions:
+      security-events: read
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
