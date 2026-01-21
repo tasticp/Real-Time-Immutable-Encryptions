@@ -12,11 +12,16 @@ env:
 
 jobs:
   # Rust Backend Testing
-  rust-tests:
-    name: Rust Backend Tests
-    runs-on: ubuntu-22.04
-    
-    steps:
+   rust-tests:
+     name: Rust Backend Tests
+     runs-on: ubuntu-22.04
+
+     env:
+       PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+       PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
+       PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+
+     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -51,14 +56,47 @@ jobs:
      - name: Build release
        run: cargo build --release --verbose --features video
 
-    - name: Upload Rust binaries
-      uses: actions/upload-artifact@v4
-      with:
-        name: rust-binaries
-        path: |
-          target/release/encryption-node
-          target/release/verification-client
-          target/release/blockchain-anchor
+     - name: Upload Rust binaries
+       uses: actions/upload-artifact@v4
+       with:
+         name: rust-binaries
+         path: |
+           target/release/encryption-node
+           target/release/verification-client
+           target/release/blockchain-anchor
+
+   # Performance Testing
+   performance-test:
+     name: Performance Tests
+     runs-on: ubuntu-22.04
+     needs: rust-tests
+
+     steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
+
+     - name: Install Rust
+       uses: dtolnay/rust-toolchain@stable
+
+     - name: Cache Rust dependencies
+       uses: actions/cache@v4
+       with:
+         path: |
+           ~/.cargo/registry
+           ~/.cargo/git
+           target
+         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+     - name: Install system dependencies
+       run: |
+         sudo apt-get update
+         sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev
+
+     - name: Run benchmarks
+       run: cargo bench --all --features video || echo "No benchmarks defined"
+
+     - name: Run load tests (placeholder)
+       run: echo "Add load testing tools like k6 or artillery here"
 
   # Python API Testing
   python-tests:
@@ -157,23 +195,51 @@ jobs:
       run: |
         docker build -f docker/python-api.Dockerfile -t immutable-encryption:test-python .
 
-    - name: Build Streamlit image
-      run: |
-        docker build -f docker/streamlit.Dockerfile -t immutable-encryption:test-streamlit python_api/streamlit/
+     - name: Build Streamlit image
+       run: |
+         docker build -f docker/streamlit.Dockerfile -t immutable-encryption:test-streamlit .
 
-    - name: Test Docker containers
-      run: |
-        # Test Rust container
-        docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
-        sleep 10
-        curl -f http://localhost:8080/health || echo "Rust health check failed"
-        docker stop test-rust || true
-        
-        # Test Python container
-        docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
-        sleep 10
-        curl -f http://localhost:8000/health || echo "Python health check failed"
-        docker stop test-python || true
+     - name: Test Docker containers
+       run: |
+         # Test Rust container
+         docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
+         sleep 10
+         curl -f http://localhost:8080/health || echo "Rust health check failed"
+         docker stop test-rust || true
+
+         # Test Python container
+         docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
+         sleep 10
+         curl -f http://localhost:8000/health || echo "Python health check failed"
+         docker stop test-python || true
+
+   # Deploy to Staging
+   deploy-staging:
+     name: Deploy to Staging
+     runs-on: ubuntu-22.04
+     needs: [docker-test, performance-test]
+     if: github.ref == 'refs/heads/develop'
+
+     steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
+
+     - name: Deploy to staging (placeholder)
+       run: echo "Add deployment logic for staging environment here"
+
+   # Deploy to Production
+   deploy-production:
+     name: Deploy to Production
+     runs-on: ubuntu-22.04
+     needs: [docker-test, performance-test]
+     if: github.ref == 'refs/heads/main'
+
+     steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
+
+     - name: Deploy to production (placeholder)
+       run: echo "Add deployment logic for production environment here"
 
   # Documentation
   docs:

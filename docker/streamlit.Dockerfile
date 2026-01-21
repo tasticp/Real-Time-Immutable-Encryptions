@@ -19,7 +19,7 @@ RUN useradd -m -u 1000 appuser
 WORKDIR /app
 
 # Copy and install Python dependencies
-COPY python_api/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir streamlit plotly pandas pillow requests
 
 # Copy Streamlit application
