@@ -20,6 +20,7 @@ jobs:
       PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
       PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
       PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+      LIBCLANG_PATH: /usr/lib/x86_64-linux-gnu
 
     steps:
     - name: Checkout code
@@ -70,6 +71,12 @@ jobs:
     name: Performance Tests
     runs-on: ubuntu-22.04
     needs: rust-tests
+
+    env:
+      PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+      PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
+      PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+      LIBCLANG_PATH: /usr/lib/x86_64-linux-gnu
 
     steps:
     - name: Checkout code
