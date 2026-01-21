@@ -133,8 +133,8 @@ jobs:
         flake8 python_api/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
     - name: Check formatting with black
-    #   run: |
-    #    black --check .
+      run: |
+        black --check .
 
     - name: Run tests with coverage
       run: |
