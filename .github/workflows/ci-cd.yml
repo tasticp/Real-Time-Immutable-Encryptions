@@ -12,16 +12,16 @@ env:
 
 jobs:
   # Rust Backend Testing
-   rust-tests:
-     name: Rust Backend Tests
-     runs-on: ubuntu-22.04
+  rust-tests:
+    name: Rust Backend Tests
+    runs-on: ubuntu-22.04
 
-     env:
-       PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
-       PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
-       PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+    env:
+      PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+      PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
+      PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
 
-     steps:
+    steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -39,64 +39,64 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev
 
     - name: Check formatting
       run: cargo fmt --all -- --check
 
-     - name: Run clippy
-       run: cargo clippy --all-targets --all-features --features video -- -D warnings
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features --features video -- -D warnings
 
-     - name: Run tests
-       run: cargo test --all --verbose --features video
+    - name: Run tests
+      run: cargo test --all --verbose --features video
 
-     - name: Build release
-       run: cargo build --release --verbose --features video
+    - name: Build release
+      run: cargo build --release --verbose --features video
 
-     - name: Upload Rust binaries
-       uses: actions/upload-artifact@v4
-       with:
-         name: rust-binaries
-         path: |
-           target/release/encryption-node
-           target/release/verification-client
-           target/release/blockchain-anchor
+    - name: Upload Rust binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: rust-binaries
+        path: |
+          target/release/encryption-node
+          target/release/verification-client
+          target/release/blockchain-anchor
 
-   # Performance Testing
-   performance-test:
-     name: Performance Tests
-     runs-on: ubuntu-22.04
-     needs: rust-tests
+  # Performance Testing
+  performance-test:
+    name: Performance Tests
+    runs-on: ubuntu-22.04
+    needs: rust-tests
 
-     steps:
-     - name: Checkout code
-       uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-     - name: Install Rust
-       uses: dtolnay/rust-toolchain@stable
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
 
-     - name: Cache Rust dependencies
-       uses: actions/cache@v4
-       with:
-         path: |
-           ~/.cargo/registry
-           ~/.cargo/git
-           target
-         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-     - name: Install system dependencies
-       run: |
-         sudo apt-get update
-         sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev
 
-     - name: Run benchmarks
-       run: cargo bench --all --features video || echo "No benchmarks defined"
+    - name: Run benchmarks
+      run: cargo bench --all --features video || echo "No benchmarks defined"
 
-     - name: Run load tests (placeholder)
-       run: echo "Add load testing tools like k6 or artillery here"
+    - name: Run load tests (placeholder)
+      run: echo "Add load testing tools like k6 or artillery here"
 
   # Python API Testing
   python-tests:
@@ -213,8 +213,8 @@ jobs:
          curl -f http://localhost:8000/health || echo "Python health check failed"
          docker stop test-python || true
 
-   # Deploy to Staging
-   deploy-staging:
+  # Deploy to Staging
+  deploy-staging:
      name: Deploy to Staging
      runs-on: ubuntu-22.04
      needs: [docker-test, performance-test]
@@ -227,8 +227,8 @@ jobs:
      - name: Deploy to staging (placeholder)
        run: echo "Add deployment logic for staging environment here"
 
-   # Deploy to Production
-   deploy-production:
+  # Deploy to Production
+  deploy-production:
      name: Deploy to Production
      runs-on: ubuntu-22.04
      needs: [docker-test, performance-test]
