@@ -195,51 +195,51 @@ jobs:
       run: |
         docker build -f docker/python-api.Dockerfile -t immutable-encryption:test-python .
 
-     - name: Build Streamlit image
-       run: |
-         docker build -f docker/streamlit.Dockerfile -t immutable-encryption:test-streamlit .
+    - name: Build Streamlit image
+      run: |
+        docker build -f docker/streamlit.Dockerfile -t immutable-encryption:test-streamlit .
 
-     - name: Test Docker containers
-       run: |
-         # Test Rust container
-         docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
-         sleep 10
-         curl -f http://localhost:8080/health || echo "Rust health check failed"
-         docker stop test-rust || true
+    - name: Test Docker containers
+      run: |
+        # Test Rust container
+        docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
+        sleep 10
+        curl -f http://localhost:8080/health || echo "Rust health check failed"
+        docker stop test-rust || true
 
-         # Test Python container
-         docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
-         sleep 10
-         curl -f http://localhost:8000/health || echo "Python health check failed"
-         docker stop test-python || true
+        # Test Python container
+        docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
+        sleep 10
+        curl -f http://localhost:8000/health || echo "Python health check failed"
+        docker stop test-python || true
 
   # Deploy to Staging
   deploy-staging:
-     name: Deploy to Staging
-     runs-on: ubuntu-22.04
-     needs: [docker-test, performance-test]
-     if: github.ref == 'refs/heads/develop'
+    name: Deploy to Staging
+    runs-on: ubuntu-22.04
+    needs: [docker-test, performance-test]
+    if: github.ref == 'refs/heads/develop'
 
-     steps:
-     - name: Checkout code
-       uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-     - name: Deploy to staging (placeholder)
-       run: echo "Add deployment logic for staging environment here"
+    - name: Deploy to staging (placeholder)
+      run: echo "Add deployment logic for staging environment here"
 
   # Deploy to Production
   deploy-production:
-     name: Deploy to Production
-     runs-on: ubuntu-22.04
-     needs: [docker-test, performance-test]
-     if: github.ref == 'refs/heads/main'
+    name: Deploy to Production
+    runs-on: ubuntu-22.04
+    needs: [docker-test, performance-test]
+    if: github.ref == 'refs/heads/main'
 
-     steps:
-     - name: Checkout code
-       uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-     - name: Deploy to production (placeholder)
-       run: echo "Add deployment logic for production environment here"
+    - name: Deploy to production (placeholder)
+      run: echo "Add deployment logic for production environment here"
 
   # Documentation
   docs:
