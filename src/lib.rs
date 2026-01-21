@@ -4,6 +4,7 @@ pub mod crypto;
 pub mod error;
 pub mod storage;
 pub mod verification;
+#[cfg(feature = "video")]
 pub mod video;
 
 use anyhow::Result;
