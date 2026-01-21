@@ -30,9 +30,10 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
-    libopencv-core4.5d \
-    libopencv-imgproc4.5d \
-    libopencv-imgcodecs4.5d \
+    curl \
+    libopencv-core4.6 \
+    libopencv-imgproc4.6 \
+    libopencv-imgcodecs4.6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user

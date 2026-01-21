@@ -110,12 +110,13 @@ jobs:
         file: python_api/coverage.xml
         flags: unittests
 
-  # Security Scanning
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-22.04
-    permissions:
-      security-events: write
+   # Security Scanning
+   security-scan:
+     name: Security Scan
+     runs-on: ubuntu-22.04
+     permissions:
+       contents: read
+       security-events: write
 
     steps:
     - name: Checkout code

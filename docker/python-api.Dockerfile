@@ -1,5 +1,5 @@
 # Python API Dockerfile
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
