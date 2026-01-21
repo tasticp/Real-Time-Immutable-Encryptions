@@ -21,6 +21,7 @@ jobs:
       PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
       PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
       LIBCLANG_PATH: /usr/lib/x86_64-linux-gnu
+      OPENCV_DISABLE_PROBES: 1
 
     steps:
     - name: Checkout code
@@ -77,6 +78,7 @@ jobs:
       PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
       PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
       LIBCLANG_PATH: /usr/lib/x86_64-linux-gnu
+      OPENCV_DISABLE_PROBES: 1
 
     steps:
     - name: Checkout code
