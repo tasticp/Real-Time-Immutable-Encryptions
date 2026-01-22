@@ -1,10 +1,10 @@
-name: 'Immutable Encryption CI/CD'
+name: "Immutable Encryption CI/CD"
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -24,48 +24,48 @@ jobs:
       OPENCV_DISABLE_PROBES: 1
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rustfmt, clippy
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
-    - name: Cache Rust dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Install system dependencies
-      run: |
-         sudo apt-get update
-         sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev clang libclang-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev clang libclang-dev
 
-    - name: Check formatting
-      run: cargo fmt --all -- --check
+      - name: Check formatting
+        run: cargo fmt --all -- --check
 
-    - name: Run clippy
-      run: cargo clippy --all-targets --all-features --features video -- -D warnings
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features --features video -- -D warnings
 
-    - name: Run tests
-      run: cargo test --all --verbose --features video
+      - name: Run tests
+        run: cargo test --all --verbose --features video
 
-    - name: Build release
-      run: cargo build --release --verbose --features video
+      - name: Build release
+        run: cargo build --release --verbose --features video
 
-    - name: Upload Rust binaries
-      uses: actions/upload-artifact@v4
-      with:
-        name: rust-binaries
-        path: |
-          target/release/encryption-node
-          target/release/verification-client
-          target/release/blockchain-anchor
+      - name: Upload Rust binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-binaries
+          path: |
+            target/release/encryption-node
+            target/release/verification-client
+            target/release/blockchain-anchor
 
   # Performance Testing
   performance-test:
@@ -81,31 +81,32 @@ jobs:
       OPENCV_DISABLE_PROBES: 1
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
-    - name: Cache Rust dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Install system dependencies
-      run: |
-         sudo apt-get update
-         sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev clang libclang-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libclang-dev
+          sudo apt-get install -y pkg-config libssl-dev libopencv-dev libavformat-dev libavfilter-dev libavdevice-dev libswscale-dev libavcodec-dev libavutil-dev clang libclang-dev
 
-    - name: Run benchmarks
-      run: cargo bench --all --features video || echo "No benchmarks defined"
+      - name: Run benchmarks
+        run: cargo bench --all --features video || echo "No benchmarks defined"
 
-    - name: Run load tests (placeholder)
-      run: echo "Add load testing tools like k6 or artillery here"
+      - name: Run load tests (placeholder)
+        run: echo "Add load testing tools like k6 or artillery here"
 
   # Python API Testing
   python-tests:
@@ -114,48 +115,48 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov black flake8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov black flake8
 
-    - name: Lint with flake8
-      run: |
-        flake8 python_api/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Lint with flake8
+        run: |
+          flake8 python_api/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-    - name: Check formatting with black
-      run: |
-        black --check .
+      - name: Check formatting with black
+        run: |
+          black --check .
 
-    - name: Run tests with coverage
-      run: |
-        cd python_api
-        python -m pytest --cov=. --cov-report=xml --cov-report=html -v || true
+      - name: Run tests with coverage
+        run: |
+          cd python_api
+          python -m pytest --cov=. --cov-report=xml --cov-report=html -v || true
 
-    - name: Upload coverage
-      uses: codecov/codecov-action@v4
-      if: matrix.python-version == '3.11'
-      with:
-        file: python_api/coverage.xml
-        flags: unittests
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          file: python_api/coverage.xml
+          flags: unittests
 
   # Security Scanning
   security-scan:
@@ -166,22 +167,22 @@ jobs:
       security-events: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
 
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v4
-      if: github.event.pull_request.head.repo.full_name == github.repository
-      with:
-        sarif_file: 'trivy-results.sarif'
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v4
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          sarif_file: "trivy-results.sarif"
 
   # Build and Test Docker Images
   docker-test:
@@ -190,37 +191,37 @@ jobs:
     needs: [rust-tests, python-tests]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build Rust backend image
-      run: |
-        docker build -f docker/rust-backend.Dockerfile -t immutable-encryption:test-rust .
+      - name: Build Rust backend image
+        run: |
+          docker build -f docker/rust-backend.Dockerfile -t immutable-encryption:test-rust .
 
-    - name: Build Python API image
-      run: |
-        docker build -f docker/python-api.Dockerfile -t immutable-encryption:test-python .
+      - name: Build Python API image
+        run: |
+          docker build -f docker/python-api.Dockerfile -t immutable-encryption:test-python .
 
-    - name: Build Streamlit image
-      run: |
-        docker build -f docker/streamlit.Dockerfile -t immutable-encryption:test-streamlit .
+      - name: Build Streamlit image
+        run: |
+          docker build -f docker/streamlit.Dockerfile -t immutable-encryption:test-streamlit .
 
-    - name: Test Docker containers
-      run: |
-        # Test Rust container
-        docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
-        sleep 10
-        curl -f http://localhost:8080/health || echo "Rust health check failed"
-        docker stop test-rust || true
+      - name: Test Docker containers
+        run: |
+          # Test Rust container
+          docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
+          sleep 10
+          curl -f http://localhost:8080/health || echo "Rust health check failed"
+          docker stop test-rust || true
 
-        # Test Python container
-        docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
-        sleep 10
-        curl -f http://localhost:8000/health || echo "Python health check failed"
-        docker stop test-python || true
+          # Test Python container
+          docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
+          sleep 10
+          curl -f http://localhost:8000/health || echo "Python health check failed"
+          docker stop test-python || true
 
   # Deploy to Staging
   deploy-staging:
@@ -230,11 +231,11 @@ jobs:
     if: github.ref == 'refs/heads/develop'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Deploy to staging (placeholder)
-      run: echo "Add deployment logic for staging environment here"
+      - name: Deploy to staging (placeholder)
+        run: echo "Add deployment logic for staging environment here"
 
   # Deploy to Production
   deploy-production:
@@ -244,11 +245,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Deploy to production (placeholder)
-      run: echo "Add deployment logic for production environment here"
+      - name: Deploy to production (placeholder)
+        run: echo "Add deployment logic for production environment here"
 
   # Documentation
   docs:
@@ -257,28 +258,28 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        pip install sphinx sphinx-rtd-theme
+      - name: Install dependencies
+        run: |
+          pip install sphinx sphinx-rtd-theme
 
-    - name: Build docs
-      run: |
-        echo "Building documentation..."
-        mkdir -p docs/_build/html
-        echo "# Immutable Encryption Documentation" > docs/_build/html/index.html
-        echo "<h1>API Documentation</h1>" >> docs/_build/html/index.html
+      - name: Build docs
+        run: |
+          echo "Building documentation..."
+          mkdir -p docs/_build/html
+          echo "# Immutable Encryption Documentation" > docs/_build/html/index.html
+          echo "<h1>API Documentation</h1>" >> docs/_build/html/index.html
 
-    - name: Deploy to GitHub Pages
-      if: false  # Disabled due to permission issues - enable after configuring repo settings
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/_build/html
+      - name: Deploy to GitHub Pages
+        if: false # Disabled due to permission issues - enable after configuring repo settings
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_build/html
