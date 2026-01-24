@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Roboto Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #000;
+  color: #00ff41;
+  height: 100vh;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+button {
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+.matrix-bg {
+  background: 
+    radial-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px),
+    radial-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  animation: matrix-scan 20s linear infinite;
+}
+
+@keyframes matrix-scan {
+  0% { background-position: 0 0, 10px 10px; }
+  100% { background-position: 20px 20px, 30px 30px; }
+}
+
+.terminal-text {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+}
