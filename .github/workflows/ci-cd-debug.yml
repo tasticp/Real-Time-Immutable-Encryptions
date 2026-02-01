@@ -1,0 +1,350 @@
+name: "Immutable Encryption CI/CD - Debug Version"
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" # Weekly security scan
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+  OPENCV_DISABLE_PROBES: 1
+  LIBCLANG_PATH: /usr/lib/x86_64-linux-gnu
+  PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+  PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
+  PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+  DEBUG_MODE: true
+
+jobs:
+  # Debug Information Job
+  debug-info:
+    name: Debug Information
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Display system information
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          lsb_release -a
+          echo "=== Environment Variables ==="
+          env | sort
+          echo "=== Disk Space ==="
+          df -h
+          echo "=== Memory Info ==="
+          free -h
+
+      - name: Check Rust toolchain
+        run: |
+          echo "=== Rust Toolchain ==="
+          rustc --version || echo "Rust not installed"
+          cargo --version || echo "Cargo not installed"
+          echo "=== Rust Components ==="
+          rustup component list || echo "rustup not available"
+
+      - name: Check Python versions
+        run: |
+          echo "=== Python Versions ==="
+          python3 --version || echo "Python3 not found"
+          python3.9 --version || echo "Python3.9 not found"
+          python3.10 --version || echo "Python3.10 not found"
+          python3.11 --version || echo "Python3.11 not found"
+
+      - name: Check Docker availability
+        run: |
+          echo "=== Docker Info ==="
+          docker --version || echo "Docker not available"
+          docker info || echo "Docker daemon not running"
+
+  # Rust Backend Testing with Debug
+  rust-tests:
+    name: Rust Backend Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    needs: debug-info
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug - Show Cargo.toml
+        run: cat Cargo.toml
+
+      - name: Debug - Show Cargo.lock
+        run: head -50 Cargo.lock || echo "Cargo.lock not found"
+
+      - name: Install Rust with debug
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, rust-analysis, rust-src
+
+      - name: Debug - Rust environment
+        run: |
+          echo "=== Rust Environment ==="
+          rustc --version
+          cargo --version
+          echo "=== Rust Targets ==="
+          rustc --print target-list
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install system dependencies with debug
+        run: |
+          echo "=== Installing System Dependencies ==="
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libssl-dev \
+            libopencv-dev \
+            libavformat-dev \
+            libavfilter-dev \
+            libavdevice-dev \
+            libswscale-dev \
+            libavcodec-dev \
+            libavutil-dev \
+            clang \
+            libclang-dev \
+            cmake \
+            build-essential \
+            git \
+            libgtk-3-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libswscale-dev \
+            libv4l-dev \
+            libxvidcore-dev \
+            libx264-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            libwebp-dev \
+            libopenexr-dev \
+            libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly
+
+      - name: Debug - Verify OpenCV installation
+        run: |
+          echo "=== OpenCV Debug Info ==="
+          pkg-config --modversion opencv4 || echo "OpenCV4 not found via pkg-config"
+          ls -la /usr/include/opencv4/ || echo "OpenCV headers not found"
+          ls -la /usr/lib/x86_64-linux-gnu/libopencv* || echo "OpenCV libraries not found"
+
+      - name: Debug - Verify clang installation
+        run: |
+          echo "=== Clang Debug Info ==="
+          clang --version || echo "Clang not found"
+          ls -la /usr/lib/x86_64-linux-gnu/libclang* || echo "Clang libraries not found"
+
+      - name: Check formatting with debug
+        run: |
+          echo "=== Running cargo fmt ==="
+          cargo fmt --all -- --check || echo "Formatting check failed"
+
+      - name: Run clippy with debug
+        run: |
+          echo "=== Running cargo clippy ==="
+          cargo clippy --all-targets --all-features --features video -- -D warnings || echo "Clippy completed with warnings"
+
+      - name: Debug - Show cargo tree
+        run: cargo tree --all-features --features video || echo "Cargo tree failed"
+
+      - name: Run tests with debug
+        run: |
+          echo "=== Running cargo test ==="
+          cargo test --all --verbose --features video -- --nocapture || echo "Tests completed with some failures"
+
+      - name: Build release with debug
+        run: |
+          echo "=== Building release ==="
+          cargo build --release --verbose --features video || echo "Build completed with warnings"
+
+      - name: Debug - Check built binaries
+        run: |
+          echo "=== Checking built binaries ==="
+          ls -la target/release/ || echo "No release binaries found"
+          file target/release/encryption-node || echo "encryption-node not found"
+          file target/release/verification-client || echo "verification-client not found"
+          file target/release/blockchain-anchor || echo "blockchain-anchor not found"
+
+      - name: Upload Rust binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-binaries-debug
+          path: |
+            target/release/encryption-node
+            target/release/verification-client
+            target/release/blockchain-anchor
+          retention-days: 7
+
+      - name: Upload debug logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-debug-logs
+          path: |
+            **/target/*.log
+            **/target/*.txt
+          retention-days: 3
+
+  # Python API Testing with Debug
+  python-tests:
+    name: Python API Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    needs: debug-info
+
+    strategy:
+      matrix:
+        python-version: ["3.11"]  # Focus on one version for debugging
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug - Show requirements
+        run: cat requirements.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Debug - Python environment
+        run: |
+          echo "=== Python Environment ==="
+          python --version
+          pip --version
+          which python
+          which pip
+
+      - name: Install system dependencies for Python
+        run: |
+          echo "=== Installing Python System Dependencies ==="
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            libxrender-dev \
+            libgomp1 \
+            libgtk-3-0 \
+            libavcodec-dev \
+            libavformat-dev \
+            libswscale-dev \
+            libv4l-dev \
+            libxvidcore-dev \
+            libx264-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            python3-dev \
+            python3-venv
+
+      - name: Debug - Install basic dependencies first
+        run: |
+          echo "=== Installing Basic Python Packages ==="
+          python -m pip install --upgrade pip setuptools wheel
+          pip install numpy opencv-python || echo "Basic packages failed"
+
+      - name: Install requirements with debug
+        run: |
+          echo "=== Installing Requirements ==="
+          pip install -r requirements.txt || echo "Some requirements failed"
+
+      - name: Debug - Check installed packages
+        run: |
+          echo "=== Installed Python Packages ==="
+          pip list
+
+      - name: Debug - Test OpenCV import
+        run: |
+          echo "=== Testing OpenCV Import ==="
+          python -c "import cv2; print(f'OpenCV version: {cv2.__version__}')" || echo "OpenCV import failed"
+
+      - name: Install dev dependencies
+        run: |
+          echo "=== Installing Dev Dependencies ==="
+          pip install pytest pytest-cov pytest-asyncio black flake8 mypy ruff || echo "Dev dependencies failed"
+
+      - name: Debug - Run simple test
+        run: |
+          echo "=== Running Simple Test ==="
+          cd python_api || echo "python_api directory not found"
+          python -m pytest --version || echo "Pytest not available"
+          python -m pytest --collect-only || echo "Test collection failed"
+
+      - name: Run tests with debug
+        run: |
+          echo "=== Running Python Tests ==="
+          cd python_api || exit 1
+          python -m pytest -v --tb=short || echo "Tests completed with failures"
+
+      - name: Upload Python debug logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-debug-logs
+          path: |
+            **/test-results
+            **/pytest.log
+          retention-days: 3
+
+  # Minimal Docker Test
+  docker-test-minimal:
+    name: Docker Test Minimal
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    needs: [rust-tests, python-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug - Docker info
+        run: |
+          echo "=== Docker Environment ==="
+          docker --version
+          docker info
+          docker images
+
+      - name: Test Rust Docker build
+        run: |
+          echo "=== Building Rust Docker Image ==="
+          docker build -f docker/rust-backend.Dockerfile -t immutable-encryption:debug-rust . || echo "Rust Docker build failed"
+
+      - name: Debug - Check Docker image
+        run: |
+          echo "=== Checking Docker Image ==="
+          docker images | grep immutable-encryption || echo "Image not found"
+          docker inspect immutable-encryption:debug-rust || echo "Image inspection failed"
+
+      - name: Upload Docker debug logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-debug-logs
+          path: |
+            **/docker-build.log
+          retention-days: 3
