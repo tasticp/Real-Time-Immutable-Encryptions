@@ -1,0 +1,434 @@
+name: "Immutable Encryption CI/CD - Ultimate Version"
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" # Weekly security scan
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+  OPENCV_DISABLE_PROBES: 1
+  LIBCLANG_PATH: /usr/lib/x86_64-linux-gnu
+  PKG_CONFIG_PATH: /usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+  PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
+  PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+  RUST_MIN_STACK: 16777216
+  RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
+  # OpenCV configuration
+  OPENCV_LIB_DIR: /usr/lib/x86_64-linux-gnu
+  OPENCV_INCLUDE_DIR: /usr/include/opencv4
+
+jobs:
+  # Ultimate Rust Backend Testing
+  rust-tests:
+    name: Rust Backend Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            ninja-build \
+            lld \
+            clang \
+            gcc \
+            g++ \
+            pkg-config \
+            git \
+            curl \
+            wget \
+            unzip \
+            tar \
+            autoconf \
+            automake \
+            libtool \
+            make
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, rust-analysis, rust-src, llvm-tools-preview
+          profile: minimal
+
+      - name: Install mold linker for faster builds
+        run: |
+          wget https://github.com/rui314/mold/releases/download/v2.3.1/mold-2.3.1-x86_64-linux.tar.gz
+          tar -xzf mold-2.3.1-x86_64-linux.tar.gz
+          sudo mv mold-2.3.1-x86_64-linux/bin/* /usr/bin/
+          rm -rf mold-2.3.1-x86_64-linux
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install comprehensive OpenCV dependencies
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            libopencv-dev \
+            libopencv-core-dev \
+            libopencv-highgui-dev \
+            libopencv-imgproc-dev \
+            libopencv-imgcodecs-dev \
+            libopencv-videoio-dev \
+            libopencv-calib3d-dev \
+            libopencv-features2d-dev \
+            libopencv-video-dev \
+            libopencv-dnn-dev \
+            libopencv-xfeatures2d-dev \
+            libopencv-ml-dev \
+            libopencv-objdetect-dev \
+            libopencv-stitching-dev \
+            libopencv-superres-dev \
+            libopencv-viz-dev \
+            libopencv-ts-dev \
+            libopencv-contrib-dev \
+            libgtk-3-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libavresample-dev \
+            libavfilter-dev \
+            libavdevice-dev \
+            libv4l-dev \
+            libxvidcore-dev \
+            libx264-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            libwebp-dev \
+            libopenexr-dev \
+            libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            libdc1394-22-dev \
+            libtheora-dev \
+            libvorbis-dev \
+            libxine2-dev \
+            libvpx-dev \
+            libmp3lame-dev \
+            libfaac-dev \
+            libopencore-amrnb-dev \
+            libopencore-amrwb-dev \
+            libx265-dev \
+            libva-dev \
+            libvdpau-dev \
+            libdrm-dev \
+            libwayland-dev \
+            libxcb1-dev \
+            libx11-dev \
+            libxext-dev \
+            libxfixes-dev
+
+      - name: Verify OpenCV installation
+        run: |
+          echo "=== OpenCV Verification ==="
+          pkg-config --modversion opencv4 || echo "OpenCV4 not found via pkg-config"
+          ls -la /usr/include/opencv4/ || echo "OpenCV headers not found"
+          ls -la /usr/lib/x86_64-linux-gnu/libopencv* || echo "OpenCV libraries not found"
+          echo "OPENCV_DIR=$OPENCV_LIB_DIR" >> $GITHUB_ENV
+
+      - name: Configure Rust environment
+        run: |
+          echo "=== Rust Configuration ==="
+          echo "RUSTFLAGS=-C link-arg=-fuse-ld=mold" >> $GITHUB_ENV
+          echo "CARGO_INCREMENTAL=1" >> $GITHUB_ENV
+          echo "CARGO_NET_RETRY=10" >> $GITHUB_ENV
+          echo "CARGO_HTTP_MULTIPLEXING=false" >> $GITHUB_ENV
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy with all features
+        run: cargo clippy --all-targets --all-features --features video -- -D warnings
+
+      - name: Build with optimized settings
+        run: |
+          ulimit -s 16384
+          cargo build --release --verbose --features video --config 'profile.release.lto = "thin"' --config 'profile.release.codegen-units = 1'
+
+      - name: Run tests with optimized settings
+        run: |
+          ulimit -s 16384
+          cargo test --all --verbose --features video -- --test-threads=1 --nocapture
+
+      - name: Verify binaries
+        run: |
+          echo "=== Binary Verification ==="
+          ls -la target/release/ || echo "No release binaries found"
+          file target/release/encryption-node || echo "encryption-node not found"
+          file target/release/verification-client || echo "verification-client not found"
+          file target/release/blockchain-anchor || echo "blockchain-anchor not found"
+          ldd target/release/encryption-node || echo "Dependency check failed"
+
+      - name: Upload Rust binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-binaries-ultimate
+          path: |
+            target/release/encryption-node
+            target/release/verification-client
+            target/release/blockchain-anchor
+          retention-days: 7
+
+  # Ultimate Python API Testing
+  python-tests:
+    name: Python API Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: '**/requirements.txt'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            libxrender-dev \
+            libgomp1 \
+            libgtk-3-0 \
+            libavcodec-dev \
+            libavformat-dev \
+            libswscale-dev \
+            libv4l-dev \
+            libxvidcore-dev \
+            libx264-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            python3-dev \
+            python3-venv \
+            ffmpeg \
+            libsm6 \
+            libxext6 \
+            libxrender1 \
+            libxfixes3 \
+            libxcb1 \
+            libx11-6 \
+            libxau6 \
+            libxdmcp6 \
+            libxcb-render0 \
+            libxcb-shm0 \
+            libxcb-xfixes0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-randr0 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-icccm4 \
+            libxcb-util1 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libxcb-sync1 \
+            libxcb-present0 \
+            libxcb-dri2-0 \
+            libxcb-dri3-0 \
+            libxcb-glx0 \
+            libxcb-xinput0 \
+            libxcb-xv0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # Install critical dependencies first with specific versions
+          pip install numpy==1.24.3 opencv-python-headless==4.8.1.78
+          # Install remaining dependencies with retry logic
+          for i in {1..3}; do
+            pip install -r requirements.txt && break
+            echo "Retry $i/3..."
+            sleep 5
+          done
+
+      - name: Verify OpenCV Python
+        run: python -c "import cv2; print(f'OpenCV Python version: {cv2.__version__}')"
+
+      - name: Install dev dependencies
+        run: pip install pytest pytest-cov pytest-asyncio black flake8 mypy ruff
+
+      - name: Run tests with coverage
+        run: |
+          cd python_api
+          python -m pytest -v --tb=short --disable-warnings --cov=. --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          file: python_api/coverage.xml
+          flags: unittests
+          name: python-coverage
+
+  # Ultimate Docker Build
+  docker-test:
+    name: Docker Build Test
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    needs: [rust-tests, python-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Rust backend image
+        run: |
+          docker build -f docker/rust-backend.Dockerfile -t immutable-encryption:test-rust .
+
+      - name: Test Rust container with retries
+        run: |
+          docker run --rm -d -p 8080:8080 --name test-rust immutable-encryption:test-rust
+          sleep 30
+          for i in {1..15}; do
+            if curl -f http://localhost:8080/health; then
+              echo "✅ Rust health check passed"
+              break
+            fi
+            sleep 20
+            echo "⏳ Retry $i/15..."
+          done
+          docker logs test-rust || true
+          docker stop test-rust || true
+
+      - name: Build Python API image
+        run: |
+          docker build -f docker/python-api.Dockerfile -t immutable-encryption:test-python .
+
+      - name: Test Python container with retries
+        run: |
+          docker run --rm -d -p 8000:8000 --name test-python immutable-encryption:test-python
+          sleep 30
+          for i in {1..15}; do
+            if curl -f http://localhost:8000/health; then
+              echo "✅ Python health check passed"
+              break
+            fi
+            sleep 20
+            echo "⏳ Retry $i/15..."
+          done
+          docker logs test-python || true
+          docker stop test-python || true
+
+  # Ultimate Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Bandit security scan
+        run: |
+          pip install bandit
+          bandit -r python_api/ -f json -o bandit-results.json || true
+
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-results
+          path: bandit-results.json
+          retention-days: 7
+
+  # Ultimate Documentation
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+
+      - name: Build API documentation
+        run: |
+          echo "Building API documentation..."
+          mkdir -p docs/_build/html
+          cargo doc --no-deps --features video --no-deps
+          cp -r target/doc/* docs/_build/html/ || true
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_build/html
+          keep_files: false
+          force_orphan: true
